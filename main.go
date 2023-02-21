@@ -56,6 +56,7 @@ func compute(header CSVHeader, data []point, montly bool) {
 		totalBase, monthBase, pointBase    float64
 		totalHC, monthHC, pointHC          float64
 		totalTempo, monthTempo, pointTempo float64
+                pointMonth, pointTotal             float64
 		refMonth                           time.Time
 	)
 	fmt.Printf("PRM:\t\t%s\n", header.PRMID)
@@ -64,6 +65,7 @@ func compute(header CSVHeader, data []point, montly bool) {
 	for index, point := range data {
 		// Adjust time for start and not end
 		adjustedTime := point.Time.Add(enedisHourlyExportStep * -1)
+
 		if index == 0 {
 			refMonth = adjustedTime
 		}
@@ -71,6 +73,8 @@ func compute(header CSVHeader, data []point, montly bool) {
 		pointBase = point.Value * getBasePrice(adjustedTime)
 		pointHC = point.Value * getHCPrice(adjustedTime)
 		pointTempo = point.Value * getTempoPrice(adjustedTime)
+                pointMonth += point.Value
+
 		// Handle months
 		if refMonth.Year() == adjustedTime.Year() && refMonth.Month() == adjustedTime.Month() {
 			monthBase += pointBase
@@ -84,17 +88,21 @@ func compute(header CSVHeader, data []point, montly bool) {
 				fmt.Printf("Option base:\t%0.2f€\n", monthBase)
 				fmt.Printf("Option HC:\t%0.2f€\n", monthHC)
 				fmt.Printf("Option Tempo:\t%0.2f€\n", monthTempo)
+  		                fmt.Printf("Consommation:\t%0.2fkwh\n", pointMonth)
+
 			}
 			// New month, reset counters
 			monthBase = pointBase
 			monthHC = pointHC
 			monthTempo = pointTempo
 			refMonth = adjustedTime
+                        pointMonth = 0
 		}
 		// Add to total
 		totalBase += pointBase
 		totalHC += pointHC
 		totalTempo += pointTempo
+                pointTotal += pointMonth
 	}
 	// Print total for old month
 	if montly {
@@ -103,6 +111,8 @@ func compute(header CSVHeader, data []point, montly bool) {
 		fmt.Printf("Option base:\t%0.2f€\n", monthBase)
 		fmt.Printf("Option HC:\t%0.2f€\n", monthHC)
 		fmt.Printf("Option Tempo:\t%0.2f€\n", monthTempo)
+                fmt.Printf("Consommation:\t%0.2fkwh\n", pointMonth)
+
 	}
 	// Print total
 	fmt.Println()
